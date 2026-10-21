@@ -257,7 +257,7 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
   }
 
   function calculate(rows, recentRows, values, mapper) {
-    const mapped = recentRows.map(row => mapper(row[2]));
+    const mapped = Rows.map(row => mapper(row[2]));
     return values.map(value => {
      const hits = recentRows.filter(
   row => mapper(row[2]) === value
