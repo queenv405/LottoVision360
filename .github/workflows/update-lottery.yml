@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: '3.12'
 
+            - name: Install Python packages
+        run: python -m pip install requests beautifulsoup4
+
       - name: Check Missouri Lottery results
         run: python scripts/update_results.py
 
