@@ -313,7 +313,9 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
     );
 
     status.textContent =
-      `Pick ${game} — ${rows.length} drawings analyzed`;
+  `Pick ${game} — Last ${recentRows.length} drawings | Full history: ${rows.length} drawings`;
+
+      
 
     sumList.replaceChildren(makeTable(sums.slice(0, 10)));
     rootList.replaceChildren(makeTable(roots));
