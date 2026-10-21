@@ -176,4 +176,150 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
   renderTracker();
 })();
 </script>
+
+<!-- LottoVision 360: Sum and Root Sum Tracker -->
+<section class="panel" id="sumRootTracker"
+  style="margin:16px 0">
+  <h2>Overdue Sums &amp; Root Sums</h2>
+  <p class="muted">
+    Track frequency and drawings since last seen.
+  </p>
+
+  <label>
+    History window
+    <select id="sumRootWindow">
+      <option value="30">Last 30 drawings</option>
+      <option value="60">Last 60 drawings</option>
+      <option value="90" selected>Last 90 drawings</option>
+    </select>
+  </label>
+
+  <p id="sumRootStatus"></p>
+  <h3>Most overdue sums</h3>
+  <div id="sumOverdueList"></div>
+  <h3>Root sums 1–9</h3>
+  <div id="rootOverdueList"></div>
+</section>
+
+<script>
+(function () {
+  const panel = document.getElementById("sumRootTracker");
+  const windowSelect = document.getElementById("sumRootWindow");
+  const status = document.getElementById("sumRootStatus");
+  const sumList = document.getElementById("sumOverdueList");
+  const rootList = document.getElementById("rootOverdueList");
+
+  const grid = document.querySelector("main .grid");
+  if (grid) grid.before(panel);
+
+  function getGame() {
+    return document.getElementById("tab4")
+      .classList.contains("active") ? "4" : "3";
+  }
+
+  function rootSum(sum) {
+    return sum === 0 ? 0 : 1 + (sum - 1) % 9;
+  }
+
+  function makeTable(items, type) {
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "collapse";
+
+    const head = document.createElement("tr");
+    ["Value", "Hits", "Draws since"].forEach(label => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      th.style.textAlign = "left";
+      th.style.padding = "8px";
+      head.appendChild(th);
+    });
+    table.appendChild(head);
+
+    items.forEach(item => {
+      const tr = document.createElement("tr");
+      [
+        item.value,
+        item.hits,
+        item.since === null
+          ? "Not seen in window"
+          : item.since
+      ].forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        td.style.padding = "8px";
+        td.style.borderTop = "1px solid #334155";
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    return table;
+  }
+
+  function calculate(rows, values, mapper) {
+    const mapped = rows.map(row => mapper(row[2]));
+    return values.map(value => {
+      const hits = mapped.filter(v => v === value).length;
+      const reverseIndex = mapped.lastIndexOf(value);
+      const since = reverseIndex === -1
+        ? null
+        : mapped.length - reverseIndex - 1;
+      return { value, hits, since };
+    }).sort((a, b) => {
+      if (a.since === null && b.since !== null) return -1;
+      if (b.since === null && a.since !== null) return 1;
+      return (b.since ?? 0) - (a.since ?? 0)
+        || a.value - b.value;
+    });
+  }
+
+  function render() {
+    const game = getGame();
+    const windowSize = Number(windowSelect.value);
+
+    if (typeof DATA === "undefined" || !DATA[game]) {
+      status.textContent = "Lottery history unavailable.";
+      return;
+    }
+
+    const rows = [...DATA[game]].sort((a, b) => {
+      const dateOrder = a[0].localeCompare(b[0]);
+      if (dateOrder) return dateOrder;
+      const order = d => d === "Midday" ? 0 : 1;
+      return order(a[1]) - order(b[1]);
+    }).slice(-windowSize);
+
+    const digitSum = digits =>
+      [...String(digits)].reduce(
+        (total, digit) => total + Number(digit), 0
+      );
+
+    const sums = calculate(
+      rows,
+      Array.from({length: game === "3" ? 28 : 37},
+        (_, i) => i),
+      digitSum
+    );
+
+    const roots = calculate(
+      rows,
+      [1,2,3,4,5,6,7,8,9],
+      digits => rootSum(digitSum(digits))
+    );
+
+    status.textContent =
+      `Pick ${game} — ${rows.length} drawings analyzed`;
+
+    sumList.replaceChildren(makeTable(sums.slice(0, 10)));
+    rootList.replaceChildren(makeTable(roots));
+  }
+
+  windowSelect.addEventListener("change", render);
+  document.getElementById("tab3")
+    .addEventListener("click", render);
+  document.getElementById("tab4")
+    .addEventListener("click", render);
+  render();
+})();
+</script>
 </body></html>
