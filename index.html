@@ -256,10 +256,12 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
     return table;
   }
 
-  function calculate(rows, values, mapper) {
+  function calculate(rows, recentRows, values, mapper) {
     const mapped = rows.map(row => mapper(row[2]));
     return values.map(value => {
-      const hits = mapped.filter(v => v === value).length;
+     const hits = recentRows.filter(
+  row => mapper(row[2]) === value
+).length;
       const reverseIndex = mapped.lastIndexOf(value);
       const since = reverseIndex === -1
         ? null
@@ -286,8 +288,9 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
       const dateOrder = a[0].localeCompare(b[0]);
       if (dateOrder) return dateOrder;
       const order = d => d === "Midday" ? 0 : 1;
-      return order(a[1]) - order(b[1]);
-    }).slice(-windowSize);
+     return order(a[1]) - order(b[1]);
+   });
+    const recentRows = rows.slice(-windowSize);
 
     const digitSum = digits =>
       [...String(digits)].reduce(
@@ -296,6 +299,7 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
 
     const sums = calculate(
       rows,
+      recentRows,
       Array.from({length: game === "3" ? 28 : 37},
         (_, i) => i),
       digitSum
@@ -303,6 +307,7 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
 
     const roots = calculate(
       rows,
+      recentRows,
       [1,2,3,4,5,6,7,8,9],
       digits => rootSum(digitSum(digits))
     );
