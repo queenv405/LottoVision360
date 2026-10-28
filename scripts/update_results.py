@@ -56,6 +56,81 @@ def export_pick4(rows):
     (output/'pick4_stats.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
     print(f'Exported {n} Pick 4 draws to data/pick4_history.csv and data/pick4_stats.json')
 
+
+def export_pick3(rows):
+    """Export Pick 3 history and overdue statistics."""
+    rows = sorted(
+        (r for r in rows
+         if len(r) == 3 and
+         re.fullmatch(r'\d{3}', str(r[2]))),
+        key=lambda r: (r[0], 0 if r[1] == 'Midday' else 1)
+    )
+
+    output = ROOT / 'data'
+    output.mkdir(exist_ok=True)
+
+    history = []
+    seen_sums = {}
+    seen_roots = {}
+
+    for i, (date, draw, number) in enumerate(rows):
+        total = sum(map(int, number))
+        root = (total - 1) % 9 + 1 if total else 0
+
+        history.append({
+            'date': date,
+            'draw': draw,
+            'number': number,
+            'sum': total,
+            'root': root,
+            'sum_gap_before': (
+                i - seen_sums[total] - 1
+                if total in seen_sums else None
+            ),
+            'root_gap_before': (
+                i - seen_roots[root] - 1
+                if root in seen_roots else None
+            )
+        })
+
+        seen_sums[total] = i
+        seen_roots[root] = i
+
+    with (output / 'pick3_history.csv').open(
+        'w', newline='', encoding='utf-8'
+    ) as f:
+        writer = csv.DictWriter(
+            f, fieldnames=[
+                'date', 'draw', 'number', 'sum', 'root',
+                'sum_gap_before', 'root_gap_before'
+            ]
+        )
+        writer.writeheader()
+        writer.writerows(history)
+
+    n = len(history)
+    summary = {
+        'draw_count': n,
+        'last_draw': (
+            history[-1]['date'] + ' ' + history[-1]['draw']
+            if history else None
+        ),
+        'sum_overdue': {
+            str(s): n - 1 - seen_sums[s]
+            if s in seen_sums else None
+            for s in range(28)
+        },
+        'root_overdue': {
+            str(r): n - 1 - seen_roots[r]
+            if r in seen_roots else None
+            for r in range(10)
+        }
+    }
+
+    (output / 'pick3_stats.json').write_text(
+        json.dumps(summary, indent=2) + '\n',
+        encoding='utf-8'
+    )
 def main():
     content=PAGE.read_text(encoding='utf-8')
     match=re.search(r'const DATA=(\{.*?\});',content,re.S)
@@ -89,5 +164,6 @@ def main():
         print('Updated index.html')
     else:print('No new results; index.html unchanged')
     export_pick4(data['4'])
+    export_pick3(data['3'])
 
 if __name__=='__main__':main()
