@@ -362,4 +362,74 @@ const DATA={"3":[["1998-01-01","Evening","397"],["1998-01-02","Evening","432"],[
   </a>
 </div>
 
+
+<section class="panel" id="pick3OverdueTracker" style="margin:20px 0;padding:18px">
+  <h2>🎯 Pick 3 Overdue Sums & Roots</h2>
+  <p>Updated from LottoVision 360's Pick 3 statistics.</p>
+  <p id="pick3OverdueStatus">Loading statistics...</p>
+  <div id="pick3OverdueResults"></div>
+</section>
+
+<script>
+(async function () {
+  const status = document.getElementById('pick3OverdueStatus');
+  const results = document.getElementById('pick3OverdueResults');
+
+  try {
+    const response = await fetch(
+      'data/pick3_stats.json?t=' + Date.now(),
+      {cache: 'no-store'}
+    );
+    if (!response.ok) throw new Error('Statistics file unavailable');
+
+    const data = await response.json();
+
+    function renderTable(title, values) {
+      const entries = Object.entries(values || {})
+        .map(([number, gap]) => [Number(number), Number(gap)])
+        .filter(([number, gap]) =>
+          Number.isFinite(number) && Number.isFinite(gap)
+        )
+        .sort((a, b) => b[1] - a[1]);
+
+      const section = document.createElement('section');
+      const heading = document.createElement('h3');
+      heading.textContent = title;
+      section.appendChild(heading);
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.innerHTML =
+        '<thead><tr><th>Number</th><th>Draws Since Hit</th></tr></thead>';
+
+      const body = document.createElement('tbody');
+      entries.forEach(([number, gap]) => {
+        const tr = document.createElement('tr');
+        [number, gap].forEach(value => {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.padding = '6px';
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+
+      table.appendChild(body);
+      section.appendChild(table);
+      results.appendChild(section);
+    }
+
+    renderTable('Overdue Sums (0–27)', data.sum_overdue);
+    renderTable('Overdue Roots (0–9)', data.root_overdue);
+
+    status.textContent =
+      'Draws analyzed: ' + data.draw_count +
+      ' | Latest: ' + data.last_draw;
+  } catch (error) {
+    status.textContent = 'Unable to load Pick 3 statistics.';
+    console.error(error);
+  }
+})();
+</script>
+
 </body></html>
