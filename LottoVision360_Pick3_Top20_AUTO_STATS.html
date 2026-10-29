@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LottoVision 360 | Pick 3 Excel-Matched Top 20</title><style>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#0d1424;color:#f4f7ff}*{box-sizing:border-box}body{margin:0;padding:16px}main{max-width:960px;margin:auto}h1{margin-bottom:3px}p{color:#b8c6dd;line-height:1.5}.panel{background:#18233a;border:1px solid #35435e;border-radius:15px;padding:17px;margin:15px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}label{display:block;font-weight:650;margin-bottom:6px;font-size:.92rem}input{background:#0b1427;border:1px solid #61708d;border-radius:8px;padding:11px;color:white;font-size:1rem;width:100%;min-width:0}input[type=checkbox]{width:auto;accent-color:#70e1c2}button{background:#70e1c2;color:#09241c;border:0;border-radius:9px;padding:11px 15px;font-weight:750;cursor:pointer;margin:8px 6px 0 0}.secondary{background:#344564;color:white}.numbers{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:13px}.num{padding:10px 6px;text-align:center;border-radius:8px;background:#243854;font-weight:750}.num small{display:block;font-weight:400;color:#bdcce1;font-size:.72rem}.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{flex:1;min-width:115px;background:#0d182e;border-radius:10px;padding:12px}.stat strong{display:block;font-size:1.5rem}.stat span{font-size:.8rem;color:#b8c6dd}.small{font-size:.86rem}.notice{border-left:3px solid #e5bb6e;padding-left:12px}a{color:#70e1c2}h2{margin:0 0 12px;font-size:1.25rem}.checkline{display:flex;align-items:center;gap:9px;margin-top:13px}.checkline label{margin:0}#message{color:#ffce9a} .tag{color:#8af0d1;font-size:.8rem}</style></head><body><main><h1>🎯 LottoVision 360</h1><p>Pick 3 · Excel-matched pair generator · 40 straight → Top 20 ranked</p>
+<section class="panel"><h2>Generator inputs</h2><div class="grid"><div><label for="base">Base pair (Excel Generator!B4)</label><input id="base" inputmode="numeric" maxlength="2" value="21"></div><div><label for="seed">Reference seed (not used in formula)</label><input id="seed" inputmode="numeric" maxlength="3" value="621"></div></div><p class="small">Four pairs are formed by mirroring either digit (+5 modulo 10). Each pair is followed by digits 0–9 to make 40 straight entries.</p></section>
+<section class="panel"><h2>Dashboard statistics</h2><p class="small">Load Pick 3 historical statistics from the <code>index.html</code> dashboard in this same GitHub folder. Your manual Excel inputs remain editable.</p><div class="grid"><div><label for="historyWindow">Recent drawings</label><select id="historyWindow" style="width:100%;background:#0b1427;color:white;border:1px solid #61708d;border-radius:8px;padding:11px"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option></select></div><div><label for="drawType">Drawing</label><select id="drawType" style="width:100%;background:#0b1427;color:white;border:1px solid #61708d;border-radius:8px;padding:11px"><option value="Both">Both</option><option value="Midday">Midday</option><option value="Evening">Evening</option></select></div></div><button id="loadStats" type="button">Refresh from dashboard</button><p id="dataStatus" class="small" role="status">Manual Excel inputs loaded. Tap Refresh to use dashboard statistics.</p></section>
+<section class="panel"><h2>Excel ranking inputs</h2><div class="grid"><div><label for="sums">Due sums · /30</label><input id="sums" value="12,15,18"></div><div><label for="roots">Due roots · /20</label><input id="roots" value="3,6,9"></div><div><label for="doubles">Doubles pairs · /20</label><input id="doubles" value="88,33,11,66,55,00"></div><div><label for="hot">Hot digits · /15</label><input id="hot" value="157"></div><div><label for="warm">Warm digits · /15</label><input id="warm" value="046"></div><div><label for="pos1">Preferred first-position digits</label><input id="pos1" value="157"></div><div><label for="pos2">Preferred second-position digits</label><input id="pos2" value="157"></div><div><label for="pos3">Preferred third-position digits</label><input id="pos3" value="157"></div></div>
+<div class="checkline"><input type="checkbox" id="noflips" checked><label for="noflips">Remove box flips in Top 20 (keep highest-scoring arrangement)</label></div><button type="button" id="generate">Generate &amp; rank Top 20</button><button class="secondary" id="copy">Copy Top 20</button><button class="secondary" id="csv">Save CSV</button><p id="message" role="status">Tap Generate &amp; rank Top 20.</p></section>
+<section class="panel"><div class="stats"><div class="stat"><strong id="count">—</strong><span>Generated straight numbers</span></div><div class="stat"><strong id="groups">—</strong><span>Unique box groups among 40</span></div><div class="stat"><strong id="selected">—</strong><span>Top ranked selections</span></div></div><h2 style="margin-top:20px">Top 20 ranked</h2><div class="numbers" id="top"></div><p class="small" id="mode"></p></section>
+<section class="panel"><h2>All 40 straight combinations</h2><div class="numbers" id="all"></div></section>
+<section class="panel"><h2>Scoring method</h2><p class="small">Uses the Excel-style <b>Top 10 Filter</b> scoring categories: due sum +30, due root +20, any listed digit pair +20, hot digits +5 each (warm +2.5), preferred digits in the matching position +5 each. Ties preserve the original 40-number generator order. The no-flips setting is an additional filter; turn it off to reproduce Excel's unfiltered ranking.</p><p class="small notice">The seed is reference-only in the Excel pair generator. Manual inputs are editable snapshots. Dashboard refresh derives new inputs from the most recent bundled historical drawings, which can produce rankings different from the Excel snapshot. Scores are experimental and do not increase the odds of winning.</p><p><a href="index.html">← Return to dashboard</a></p></section></main>
+<script>
+
+(function () {
+  "use strict";
+  function el(id) { return document.getElementById(id); }
+  function boxKey(n) { return n.split("").sort().join(""); }
+  function setValues(id) {
+    var parts=el(id).value.split(","), result={};
+    for(var i=0;i<parts.length;i++) { var p=parts[i].replace(/^\s+|\s+$/g,""); if(p) result[p]=true; }
+    return result;
+  }
+  function tile(number,detail) {
+    var d=document.createElement("div"); d.className="num";
+    d.appendChild(document.createTextNode(number));
+    if(detail) { var s=document.createElement("small"); s.appendChild(document.createTextNode(detail)); d.appendChild(s); }
+    return d;
+  }
+  function render(id,items) {
+    var parent=el(id);
+    while(parent.firstChild) parent.removeChild(parent.firstChild);
+    for(var i=0;i<items.length;i++) parent.appendChild(items[i]);
+  }
+  var ranked=[],selected=[];
+  function generate() {
+    try {
+      var base=el("base").value.replace(/\s/g,"");
+      if(!/^\d{2}$/.test(base)) { el("message").textContent="Enter exactly two digits for the base pair."; return; }
+      function mirror(d) { return String((Number(d)+5)%10); }
+      var pairs=[base,base.charAt(0)+mirror(base.charAt(1)),mirror(base.charAt(0))+base.charAt(1),mirror(base.charAt(0))+mirror(base.charAt(1))];
+      var numbers=[],i,j;
+      for(i=0;i<pairs.length;i++) for(j=0;j<10;j++) numbers.push(pairs[i]+String(j));
+      var sums=setValues("sums"),roots=setValues("roots"),doubles=setValues("doubles");
+      var hot=el("hot").value,warm=el("warm").value;
+      var positions=[el("pos1").value,el("pos2").value,el("pos3").value];
+      ranked=[];
+      for(i=0;i<numbers.length;i++) {
+        var n=numbers[i],sum=0,hotScore=0,positionScore=0;
+        for(j=0;j<3;j++) {
+          var digit=n.charAt(j);
+          sum+=Number(digit);
+          hotScore+=hot.indexOf(digit)!==-1?5:(warm.indexOf(digit)!==-1?2.5:0);
+          positionScore+=positions[j].indexOf(digit)!==-1?5:0;
+        }
+        var root=sum===0?0:((sum-1)%9)+1;
+        var pairHit=doubles[n.substr(0,2)]||doubles[n.charAt(0)+n.charAt(2)]||doubles[n.substr(1,2)];
+        var score=(sums[String(sum)]?30:0)+(roots[String(root)]?20:0)+(pairHit?20:0)+hotScore+positionScore;
+        ranked.push({n:n,i:i,sum:sum,root:root,score:score,box:boxKey(n)});
+      }
+      ranked.sort(function(a,b){return b.score-a.score||a.i-b.i;});
+      selected=[];var seen={};var noFlips=el("noflips").checked;
+      for(i=0;i<ranked.length&&selected.length<20;i++) {
+        var r=ranked[i];if(noFlips&&seen[r.box])continue;
+        seen[r.box]=true;selected.push(r);
+      }
+      var groups={},tiles=[],allTiles=[];
+      for(i=0;i<numbers.length;i++) { groups[boxKey(numbers[i])]=true;allTiles.push(tile(numbers[i],"")); }
+      for(i=0;i<selected.length;i++) tiles.push(tile(selected[i].n,"#"+(i+1)+" · "+selected[i].score+" pts"));
+      var groupCount=0;for(var k in groups) if(Object.prototype.hasOwnProperty.call(groups,k))groupCount++;
+      el("count").textContent=String(numbers.length);
+      el("groups").textContent=String(groupCount);
+      el("selected").textContent=String(selected.length);
+      el("mode").textContent=noFlips?"Box-flip filtering ON: one arrangement per digit group.":"Box-flip filtering OFF: score order with flips.";
+      render("top",tiles);render("all",allTiles);
+      el("message").textContent="Generated "+numbers.length+" straight combinations and ranked "+selected.length+" selections.";
+    } catch(e) {el("message").textContent="Generator error: "+(e.message||String(e));}
+  }
+  function csv() {
+    var lines=["rank,number,score,sum,root,box_group"];
+    for(var i=0;i<selected.length;i++){var r=selected[i];lines.push([i+1,r.n,r.score,r.sum,r.root,r.box].join(","));}
+    var a=document.createElement("a");
+    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(lines.join("\n"));
+    a.download="LottoVision_Pick3_Top20.csv";document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  async function refreshStats() {
+    var status=el("dataStatus");
+    status.textContent="Loading dashboard data...";
+    try {
+      var response=await fetch("index.html",{cache:"no-store"});
+      if(!response.ok) throw new Error("Dashboard not accessible");
+      var html=await response.text();
+      var match=html.match(/\bconst\s+DATA\s*=\s*(\{[\s\S]*?\})\s*;/);
+      if(!match) throw new Error("Historical DATA not found in dashboard");
+      var data=JSON.parse(match[1]);
+      var rows=(data["3"]||[]).filter(function(r){return Array.isArray(r)&&/^\d{3}$/.test(String(r[2]))&& (el("drawType").value==="Both"||r[1]===el("drawType").value);});
+      rows.sort(function(a,b){return a[0].localeCompare(b[0]) || (a[1]==="Midday"?-1:1);});
+      var recent=rows.slice(-Number(el("historyWindow").value));
+      if(recent.length<10) throw new Error("Not enough Pick 3 drawings");
+      var freq=Array(10).fill(0), pos=[Array(10).fill(0),Array(10).fill(0),Array(10).fill(0)], pairCounts={}, sums={}, roots={};
+      function root(n){return n===0?0:1+(n-1)%9;}
+      recent.forEach(function(r){
+        var n=String(r[2]),sum=0;
+        for(var j=0;j<3;j++){var d=Number(n[j]);freq[d]++;pos[j][d]++;sum+=d;}
+        sums[sum]=(sums[sum]||0)+1;roots[root(sum)]=(roots[root(sum)]||0)+1;
+        [n.slice(0,2),n[0]+n[2],n.slice(1,3)].forEach(function(pair){if(pair[0]===pair[1])pairCounts[pair]=(pairCounts[pair]||0)+1;});
+      });
+      function rankDigits(arr){return Array.from({length:10},function(_,i){return i;}).sort(function(a,b){return arr[b]-arr[a]||a-b;});}
+      function gaps(keys,fn){return keys.map(function(k){var idx=-1;for(var i=recent.length-1;i>=0;i--){if(fn(recent[i])===k){idx=i;break;}}return {k:k,gap:idx<0?recent.length:recent.length-1-idx};}).sort(function(a,b){return b.gap-a.gap||a.k-b.k;}).slice(0,3).map(function(x){return x.k;}).join(",");}
+      var digitOrder=rankDigits(freq);
+      el("hot").value=digitOrder.slice(0,3).join("");
+      el("warm").value=digitOrder.slice(3,7).join("");
+      for(var p=0;p<3;p++)el("pos"+(p+1)).value=rankDigits(pos[p]).slice(0,3).join("");
+      el("sums").value=gaps(Array.from({length:28},function(_,i){return i;}),function(r){return String(r[2]).split("").reduce(function(a,b){return a+Number(b);},0);});
+      el("roots").value=gaps(Array.from({length:10},function(_,i){return i;}),function(r){return root(String(r[2]).split("").reduce(function(a,b){return a+Number(b);},0));});
+      var doublePairs=["00","11","22","33","44","55","66","77","88","99"];
+      doublePairs.sort(function(a,b){return (pairCounts[b]||0)-(pairCounts[a]||0)||a.localeCompare(b);});
+      el("doubles").value=doublePairs.slice(0,6).join(",");
+      status.textContent="Loaded "+recent.length+" "+el("drawType").value+" Pick 3 drawings, through "+recent[recent.length-1][0]+". Ranked using calculated overdue sums/roots, frequent doubles, digits and positions. This may differ from your Excel snapshot.";
+      generate();
+    } catch(err){status.textContent="Dashboard refresh unavailable ("+err.message+"). Manual Excel inputs are unchanged; you can still generate.";}
+  }
+  el("loadStats").onclick=refreshStats;
+  el("generate").onclick=generate;
+  el("noflips").onchange=generate;
+  el("copy").onclick=function(){
+    var lines=[];for(var i=0;i<selected.length;i++)lines.push(selected[i].n);
+    var text=lines.join("\n");
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){el("message").textContent="Top list copied.";},function(){el("message").textContent="Copy unavailable in this preview; use Save CSV.";});
+    }else el("message").textContent="Copy unavailable in this preview; use Save CSV.";
+  };
+  el("csv").onclick=csv;
+  generate();
+}());
+
+</script></body></html>
